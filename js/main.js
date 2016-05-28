@@ -1,7 +1,6 @@
 var GameState = {
     init: function(){
         
-        this.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
         this.scale.pageAlignHorizontally = true;
         this.scale.pageAlignVertically = true;
     },
@@ -14,6 +13,7 @@ var GameState = {
         
         this.game.renderer.clearBeforeRender = false;
         this.game.renderer.roundPixels = true;
+        this.gameOverState = false;
         
         this.physics.startSystem(Phaser.Physics.ARCADE);
         
@@ -22,6 +22,7 @@ var GameState = {
         this.cursors = this.input.keyboard.createCursorKeys();
 
         this.shipSprite = this.add.sprite(175, 20, 'ship');
+        this.shipSprite.scale.setTo(0.6, 0.6);
         this.shipSprite.anchor.set(0.5);
         this.physics.enable(this.shipSprite, Phaser.Physics.ARCADE);
         this.shipSprite.body.drag.set(100);
@@ -38,8 +39,9 @@ var GameState = {
         this.trailNumber = 1;
         this.lastShip = this.shipSprite;
         
-        this.time.events.loop(Phaser.Timer.SECOND/48.0, this.updateTrail, this);
+        this.trailLoop = this.time.events.loop(Phaser.Timer.SECOND/48.0, this.updateTrail, this);
         
+        this.textArray = [];
     },
     update: function() {
         
@@ -74,12 +76,33 @@ var GameState = {
         this.screenWrap(this.shipSprite);
         
         this.physics.arcade.overlap(this.shipSprite, this.ringSprite, this.eatHandler, null, this);
+        this.physics.arcade.overlap(this.shipSprite, this.trailGroup, this.gameOverHandler, null, this);
+
+        if(this.gameOverState && this.physics.arcade.isPaused && this.input.keyboard.isDown(Phaser.KeyCode.R))
+        {
+            this.game.state.start('GameState');
+        }
     },
     
+    gameOverHandler: function()
+    {
+        if(!this.gameOverState)
+        {
+            var style = { font: "bold 32px Arial", fill: "#fff", boundsAlignH: "center", boundsAlignV: "middle" };
+            var gameOverText = this.add.text(0, this.stage.height/2.0, "Game Over\n(Press \"r\" to restart)", style);
+            gameOverText.anchor.set(0, 0.5);
+            this.gameOverState = true;
+            this.physics.arcade.isPaused = true;
+        }
+    },
+        
     eatHandler: function()
     {
         this.spawnRing();
         this.trailNumber++;
+        this.lastShip.trailQueueX = new Queue();
+        this.lastShip.trailQueueY = new Queue();
+        this.lastShip.directionQueue = new Queue();
     },
     
     screenWrap: function(sprite)
@@ -114,6 +137,9 @@ var GameState = {
         lastSprite.nextSprite = trailSprite;
         trailSprite.tint = 0xff0000;
         trailSprite.anchor.setTo(0.5);
+        trailSprite.scale.setTo(0.6, 0.6);
+        trailSprite.body.setSize(40, 40, 4, 4);
+        console.log(trailSprite.body.width);
         trailSprite.trailQueueX = new Queue();
         trailSprite.trailQueueY = new Queue();
         trailSprite.directionQueue = new Queue();
@@ -127,15 +153,15 @@ var GameState = {
         
         sprite.directionQueue.enqueue(sprite.rotation);
         
-        if(sprite.trailQueueX.getLength() > 60)
+        if(sprite.trailQueueX.getLength() > 45)
         {
             sprite.trailQueueX.dequeue();
         }
-        if(sprite.trailQueueY.getLength() > 60)
+        if(sprite.trailQueueY.getLength() > 45)
         {
             sprite.trailQueueY.dequeue();
         }
-        if(sprite.directionQueue.getLength() > 60)
+        if(sprite.directionQueue.getLength() > 45)
         {
             sprite.directionQueue.dequeue();
         }
@@ -147,7 +173,10 @@ var GameState = {
         
         while(firstSprite)
         {
-            this.updateTrailQueue(firstSprite);
+            //if(this.trailNumber > 0)
+            //{
+                this.updateTrailQueue(firstSprite);
+            //}
             
             if('nextSprite' in firstSprite)
             {
@@ -161,7 +190,7 @@ var GameState = {
             firstSprite = firstSprite.nextSprite;
         }
         
-        if(this.lastShip.directionQueue.getLength() >= 60 && this.trailNumber > 0)
+        if(this.lastShip.directionQueue.getLength() >= 45 && this.trailNumber > 0)
         {
             this.addTrailSprite(this.lastShip);
             this.trailNumber--;
@@ -176,11 +205,11 @@ var GameState = {
         var ringx;
         var ringy;
         
-        var wmin = 100;
-        var wmax = this.stage.width - 100;
+        var wmin = 50;
+        var wmax = 750;
         
-        var hmin = 100;
-        var hmax = this.stage.height - 100;
+        var hmin = 50;
+        var hmax = 400;
         
         var wavg = (wmin + wmax)/2.0;
         var havg = (hmin + hmax)/2.0;
@@ -212,7 +241,7 @@ var GameState = {
                 ringy = this.rnd.between(hmin, havg);
             }
         }
-        if(!('ringSprite' in this))
+        if(this.ringSprite == null || !this.ringSprite.exists)
         {
             this.ringSprite = this.add.sprite(ringx, ringy, 'ring');
             this.ringSprite.anchor.set(0.5);
@@ -226,8 +255,12 @@ var GameState = {
     
     render:function()
     {
+        //this.game.debug.body(this.shipSprite);
+        //this.trailGroup.forEach(function(item){
+        //    this.game.debug.body(item);
+        //});
     }
 };
-var game = new Phaser.Game(1280, 720, Phaser.AUTO);
+var game = new Phaser.Game(800, 450, Phaser.AUTO);
 game.state.add('GameState', GameState);
 game.state.start('GameState');
