@@ -29,19 +29,17 @@ var GameState = {
         this.shipSprite.body.maxVelocity.set(200);
         this.shipSprite.trailQueueX = new Queue();
         this.shipSprite.trailQueueY = new Queue();
-        
         this.spawnRing();
         
         this.shipSprite.directionQueue = new Queue();
         
         this.trailGroup = this.add.physicsGroup(Phaser.Physics.ARCADE);
         
-        this.trailNumber = 1;
+        this.trailNumber = 0;
         this.lastShip = this.shipSprite;
         
         this.trailLoop = this.time.events.loop(Phaser.Timer.SECOND/48.0, this.updateTrail, this);
-        
-        this.textArray = [];
+        this.circleGraphics = this.add.graphics(0,0);
     },
     update: function() {
         
@@ -51,14 +49,7 @@ var GameState = {
         }
         else
         {
-            if(this.shipSprite.body.speed < 50)
-            {
-                this.physics.arcade.accelerationFromRotation(this.shipSprite.rotation, 500, this.shipSprite.body.acceleration);
-            }
-            else
-            {
-                this.shipSprite.body.acceleration.set(0);
-            }
+            this.shipSprite.body.acceleration.set(0);
         }
         
         if (this.cursors.left.isDown)
@@ -132,7 +123,6 @@ var GameState = {
         var trailSprite
         
         trailSprite = this.trailGroup.create(lastSprite.trailQueueX.peek(), lastSprite.trailQueueY.peek(), 'ship');
-        
         trailSprite.rotation = lastSprite.directionQueue.peek();
         lastSprite.nextSprite = trailSprite;
         trailSprite.tint = 0xff0000;
@@ -190,10 +180,21 @@ var GameState = {
             firstSprite = firstSprite.nextSprite;
         }
         
+        //this.circleGraphics.clear();
         if(this.lastShip.directionQueue.getLength() >= 45 && this.trailNumber > 0)
         {
+            this.circleGraphics.clear();
             this.addTrailSprite(this.lastShip);
             this.trailNumber--;
+        }
+        else if(this.trailNumber > 0)
+        {
+            this.circleGraphics.clear();
+            this.circleGraphics.lineStyle(5, 0xff0000, 1);
+            var circlePointX = this.lastShip.trailQueueX.peek();
+            var circlePointY = this.lastShip.trailQueueY.peek();
+            var circleDiameter = 45 - this.lastShip.directionQueue.getLength();
+            this.circleGraphics.drawCircle(circlePointX, circlePointY, circleDiameter);
         }
     },
     
