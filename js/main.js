@@ -1,3 +1,4 @@
+var highScore = 0;
 var GameState = {
     init: function(){
         
@@ -40,6 +41,15 @@ var GameState = {
         
         this.trailLoop = this.time.events.loop(Phaser.Timer.SECOND/48.0, this.updateTrail, this);
         this.circleGraphics = this.add.graphics(0,0);
+        this.gameScore = 0;
+        
+        var scoreStyle = {
+            font:"16px Helvetica",
+            fill: "#fff"
+        };
+        this.scoreText = this.add.text(10, 10, "Score: " + this.gameScore, scoreStyle);
+        this.highScoreText = this.add.text(this.world.width - 10, 10, "High Score: " + highScore, scoreStyle);
+        this.highScoreText.anchor.set(1, 0);
     },
     update: function() {
         
@@ -79,8 +89,8 @@ var GameState = {
     {
         if(!this.gameOverState)
         {
-            var style = { font: "bold 32px Arial", fill: "#fff", boundsAlignH: "center", boundsAlignV: "middle" };
-            var gameOverText = this.add.text(0, this.stage.height/2.0, "Game Over\n(Press \"r\" to restart)", style);
+            var style = { font: "bold 32px Helvetica", fill: "#fff", boundsAlignH: "center", boundsAlignV: "middle" };
+            var gameOverText = this.add.text(20, this.world.centerY, "Game Over\n(Press \"r\" to restart)", style);
             gameOverText.anchor.set(0, 0.5);
             this.gameOverState = true;
             this.physics.arcade.isPaused = true;
@@ -91,9 +101,20 @@ var GameState = {
     {
         this.spawnRing();
         this.trailNumber++;
+        this.gameScore++;
+        if(this.gameScore > highScore){
+            highScore = this.gameScore;
+        }
+        this.updateScore();
         this.lastShip.trailQueueX = new Queue();
         this.lastShip.trailQueueY = new Queue();
         this.lastShip.directionQueue = new Queue();
+    },
+    
+    updateScore: function()
+    {
+        this.scoreText.setText("Score: " + this.gameScore);
+        this.highScoreText.setText("High Score: " + highScore);
     },
     
     screenWrap: function(sprite)
@@ -180,7 +201,6 @@ var GameState = {
             firstSprite = firstSprite.nextSprite;
         }
         
-        //this.circleGraphics.clear();
         if(this.lastShip.directionQueue.getLength() >= 45 && this.trailNumber > 0)
         {
             this.circleGraphics.clear();
